@@ -14,9 +14,9 @@
   "dependencies": {
     "express": "^4.14.0",
     "g-i-s": "^2.0.0",
+    "newrelic": "^1.28.1",
     "node-telegram-bot-api": "^0.23.3"
   },
   "devDependencies": {
-    "newrelic": "^1.28.1"
   }
 }
