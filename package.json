@@ -1,0 +1,19 @@
+{
+  "name": "freedom-bot",
+  "description": "Telegram bot for administering FREEDOM",
+  "author": "Sabbir Baser",
+  "version": "0.0.1",
+  "private": false,
+  "contributors": [
+    {
+      "name": "Sabbir Baser",
+      "email": "sabbirbaser@gmail.com"
+    }
+  ],
+  "main": "index.js",
+  "dependencies": {
+    "g-i-s": "^2.0.0",
+    "node-telegram-bot-api": "^0.23.3"
+  },
+  "devDependencies": {}
+}
