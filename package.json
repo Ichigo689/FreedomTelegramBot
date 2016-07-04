@@ -15,5 +15,6 @@
     "g-i-s": "^2.0.0",
     "node-telegram-bot-api": "^0.23.3"
   },
-  "devDependencies": {}
+  "devDependencies": {
+  }
 }

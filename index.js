@@ -2,14 +2,14 @@ const token = "201884053:AAHFcpWnYYkt2RdJDfyZZ9z2C40aK9_AVVc";
 // const imgAPI = "AIzaSyA88SlhV40zJ98Z-Ozy9GvIJsYroS4qF6Y";
 // const cseId = "011909804877856148840:kw4y0-sj8ik";
 
-let botApi = require('node-telegram-bot-api');
-// let googleImages = require('google-images');
-// let imgSearch = googleImages(cseId, imgAPI);
-let bot = new botApi(token, {polling: true});
-let newImgSearch = require('g-i-s');
+var botApi = require('node-telegram-bot-api');
+// var googleImages = require('google-images');
+// var imgSearch = googleImages(cseId, imgAPI);
+var bot = new botApi(token, {polling: true});
+var newImgSearch = require('g-i-s');
 
 
-let searches = [
+var searches = [
     'American Flag',
     'Statue of Liberty',
     'America',
@@ -41,9 +41,9 @@ let searches = [
 
 
 // bot.onText(/^\/freedom/, (msg, match) => {
-//     let randSearch = Math.floor((Math.random() * searches.length) + 1);
-//     let randPage = Math.floor((Math.random() * 3) + 1);
-//     let randImg = Math.floor((Math.random() * 10) + 1);
+//     var randSearch = Math.floor((Math.random() * searches.length) + 1);
+//     var randPage = Math.floor((Math.random() * 3) + 1);
+//     var randImg = Math.floor((Math.random() * 10) + 1);
 //     console.log(randSearch, randPage, randImg);
 //     imgSearch.search(searches[randSearch], {page: randPage}).then((result) => {
 //         console.log(searches[randImg].url);
@@ -52,8 +52,8 @@ let searches = [
 // });
 
 // bot.onText(/^\/blaze/, (msg, match) => {
-//     let randPage = Math.floor((Math.random() * 3) + 1);
-//     let randImg = Math.floor((Math.random() * 10) + 1);
+//     var randPage = Math.floor((Math.random() * 3) + 1);
+//     var randImg = Math.floor((Math.random() * 10) + 1);
 //     console.log('Blaze:', randPage, randImg);
 //     imgSearch.search('fire', {page: randPage}).then((result) => {
 //         console.log(result);
@@ -83,9 +83,9 @@ function getImage(query) {
 }
 
 bot.onText(/^\/freedom/, (msg, match) => {
-    let randSearch = Math.floor((Math.random() * searches.length) + 1);
+    var randSearch = Math.floor((Math.random() * searches.length) + 1);
     getImage(searches[randSearch]).then((result) => {
-        let randImg = Math.floor((Math.random() * result.length) + 1);
+        var randImg = Math.floor((Math.random() * result.length) + 1);
         console.log(searches[randSearch], randSearch);
         bot.sendMessage(msg.chat.id, ('Searching for ' + searches[randSearch]) + ' ' + result[randImg].url);
     });
@@ -93,7 +93,7 @@ bot.onText(/^\/freedom/, (msg, match) => {
 
 bot.onText(/^\/blaze/, (msg, match) => {
     getImage('fire').then((result) => {
-        let randImg = Math.floor((Math.random() * result.length) + 1);
+        var randImg = Math.floor((Math.random() * result.length) + 1);
         console.log('Blaze:', randImg);
         bot.sendMessage(msg.chat.id, ('Blayz ' + result[randImg].url));
     });
