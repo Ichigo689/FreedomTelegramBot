@@ -58,6 +58,7 @@ function getImage(query) {
 }
 
 bot.onText(/^\/freedom/, (msg, match) => {
+    console.log(msg);
     var randSearch = Math.floor((Math.random() * searches.length) + 1);
     getImage(searches[randSearch]).then((result) => {
         var randImg = Math.floor((Math.random() * result.length) + 1);
