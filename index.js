@@ -244,7 +244,7 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
         }
         var minute = Number(match[6]);
         makeRecurrence(msg.chat.id, hour24, minute, match[7]).then(() => {
-            bot.sendMessage(msg.chat.id, `Event: ${match[7]} will be repeated at ${hour}:${minute} ${timeType}`);
+            bot.sendMessage(msg.chat.id, `Unsaved Event: ${match[7]} will be repeated at ${hour}:${minute} ${timeType}`);
         });
     }
 
