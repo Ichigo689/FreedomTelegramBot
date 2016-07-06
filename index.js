@@ -1,7 +1,10 @@
-const token = "201884053:AAHFcpWnYYkt2RdJDfyZZ9z2C40aK9_AVVc";
-const mongoURL = 'mongodb://<FreedomTelegramBot>:<freedombot12>@ds011705.mlab.com:11705/heroku_7m7cx5b3';
+// RELIC DATA
+require('newrelic');
+
+var botToken = "201884053:AAHFcpWnYYkt2RdJDfyZZ9z2C40aK9_AVVc";
+var mongoURL = 'mongodb://heroku_7m7cx5b3:j1e3l4slk9tson1kd1n6pi0ccb@ds011705.mlab.com:11705/heroku_7m7cx5b3' || process.env.MONGODB_URI;
 var botApi = require('node-telegram-bot-api');
-var bot = new botApi(token, {polling: true});
+var bot = new botApi(botToken, {polling: true});
 var newImgSearch = require('g-i-s');
 var schedule = require('node-schedule');
 var mongo = require('mongodb').MongoClient;
@@ -20,8 +23,7 @@ app.get('/', function(request, response) {
     console.log('App is running, server is listening on port ', app.get('port'));
 });
 
-// RELIC DATA
-require('newrelic');
+
 
 
 // BOT FUNCTIONS
@@ -126,6 +128,14 @@ function makeRecurrence(chatId, hour, minute, message) {
             });
         }).then((result) => {
             console.log('runninEvents', util.inspect(runningEvents,{showHidden: true, depth: 8}));
+            let eventObject = {};
+            eventObject[chatId] = runningEvents[chatId];
+            saveEvent(eventObject).then(() => {
+
+            }).catch((error) => {
+                reject(error);
+            })
+        }).then(() => {
             resolve();
         }).catch((error) => {
             reject(error);
@@ -135,18 +145,14 @@ function makeRecurrence(chatId, hour, minute, message) {
 
 function saveEvent (eventObject) {
     return new Promise((resolve, reject) => {
-        mongo.connect(mongoURL).then((error, db) => {
+        mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
-            db.collection('Events').insertOne(JSON.stringify(eventObject)).then((error, result) => {
-                assert.equal(err, null);
-                console.log('Document inserted into Events');
-            }).then(() => {
+            
+            db.collection('Events').insertOne(eventObject, (error, result) => {
+                assert.equal(null, error);
                 db.close();
-                resolve(true); // SUCCESS
+                resolve();
             });
-        }).catch((error) => {
-            console.log(error);
-            reject('Could not get Event.'); // FAILURE
         });
     });
 }
@@ -230,7 +236,7 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
         }
         var minute = Number(match[2]);
         makeRecurrence(msg.chat.id, hour24, minute, match[4]).then(() => {
-            bot.sendMessage(msg.chat.id, `Event: ${match[4]} will be repeated at ${hour}:${minute} ${timeType}`);
+            bot.sendMessage(msg.chat.id, `Saved (but not reloaded) Event: ${match[4]} will be repeated at ${hour}:${minute} ${timeType}`);
         }).catch((error) => {
             bot.sendMessage(msg.chat.id, error);
         });
@@ -244,8 +250,7 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
         }
         var minute = Number(match[6]);
         makeRecurrence(msg.chat.id, hour24, minute, match[7]).then(() => {
-            bot.sendMessage(msg.chat.id, `Unsaved Event: ${match[7]} will be repeated at ${hour}:${minute} ${timeType}`);
+            bot.sendMessage(msg.chat.id, `Saved (but not reloaded) Event: ${match[7]} will be repeated at ${hour}:${minute} ${timeType}`);
         });
     }
-
 });
