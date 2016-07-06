@@ -2,7 +2,7 @@
 require('newrelic');
 
 var botToken = "201884053:AAHFcpWnYYkt2RdJDfyZZ9z2C40aK9_AVVc";
-var mongoURL = 'mongodb://heroku_7m7cx5b3:j1e3l4slk9tson1kd1n6pi0ccb@ds011705.mlab.com:11705/heroku_7m7cx5b3' || process.env.MONGODB_URI;
+var mongoURL = 'mongodb://heroku_7m7cx5b3:j1e3l4slk9tson1kd1n6pi0ccb@ds011705.mlab.com:11705/heroku_7m7cx5b3';
 var botApi = require('node-telegram-bot-api');
 var bot = new botApi(botToken, {polling: true});
 var newImgSearch = require('g-i-s');
