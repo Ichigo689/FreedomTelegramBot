@@ -1,7 +1,7 @@
 // RELIC DATA
 require('newrelic');
 
-var botToken = "201884053:AAHFcpWnYYkt2RdJDfyZZ9z2C40aK9_AVVc";
+var botToken = "263345256:AAGQVyxcJ6NFyRjYu9h-Iq6nS2QTBUM_NfE";
 var mongoURL = process.env.MONGODB_URI || 'mongodb://heroku_7m7cx5b3:j1e3l4slk9tson1kd1n6pi0ccb@ds011705.mlab.com:11705/heroku_7m7cx5b3';
 var botApi = require('node-telegram-bot-api');
 var bot = new botApi(botToken, {polling: true});
@@ -9,19 +9,19 @@ var newImgSearch = require('g-i-s');
 var schedule = require('node-schedule');
 var mongo = require('mongodb').MongoClient;
 var assert = require('assert');
-var express = require('express');
-var app = express();
+// var express = require('express');
+// var app = express();
 var util = require('util');
 
-app.set('port', (process.env.PORT || 5000));
+// app.set('port', (process.env.PORT || 5000));
 
-//For avoiding Heroku $PORT error
-app.get('/', function(request, response) {
-    var result = 'App is running'
-    response.send(result);
-}).listen(app.get('port'), function() {
-    console.log('App is running, server is listening on port ', app.get('port'));
-});
+// //For avoiding Heroku $PORT error
+// app.get('/', function(request, response) {
+//     var result = 'App is running'
+//     response.send(result);
+// }).listen(app.get('port'), function() {
+//     console.log('App is running, server is listening on port ', app.get('port'));
+// });
 
 
 
@@ -127,7 +127,6 @@ function makeRecurrence(chatId, hour, minute, message) {
                 bot.sendMessage(chatId, message);
             });
         }).then((result) => {
-            console.log('runninEvents', util.inspect(runningEvents,{showHidden: true, depth: 8}));
             var eventObject = {};
             eventObject[chatId] = runningEvents[chatId];
             saveEvent(eventObject).then(() => {
@@ -159,32 +158,21 @@ function saveEvent (eventObject) {
 
 function findEvent (chatId, eventName) {
     return new Promise((resolve, reject) => {
-        var eventDocument = {};
-        mongo.connect(mongoURL).then((error, db) => {
+        mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
-            var searchObject = {};
-            searchObject[chatId].name = eventName;
-            var cursor = db.collection('Events').find(JSON.stringify(searchObject));
-            cursor.each().then((error, document) => {
+            var searchObject = {}
+            searchObject[chatId] = {};
+            searchObject[chatId][eventName] = {$size: {$gt: 0}};
+            var cursor = db.collection('Events').find(searchObject).each((error, document) => {
+                console.log(searchObject);
                 assert.equal(null, error);
-                if (document != null) {
-                    eventDocument.document.push(document);
-                    eventDocument.statusCode = 200;
+                if (document) {
+                    console.log(document);
+                    db.close();
+                    resolve(document);
                 }
-            }).then(() => {
                 db.close();
-            }).then(() => {
-                if (eventDocument.statusCode === 200) {
-                    resolve(eventDocument);
-                } else {
-                    eventDocument.statusCode = 404;
-                    resolve(eventDocument);
-                }
             });
-        }).catch((error) => {
-            eventDocument.document = error;
-            eventDocument.statusCode = 400;
-            reject(eventDocument);
         });
     });
 }
@@ -203,6 +191,8 @@ bot.onText(/^\/freedom/, (msg, match) => {
         var randImg = Math.floor((Math.random() * result.length) + 1);
         console.log(searches[randSearch], randSearch);
         bot.sendMessage(msg.chat.id, ('Searching for ' + searches[randSearch]) + ' ' + result[randImg].url);
+    }).catch((error) => {
+        cosole.log(error);
     });
 });
 
@@ -225,7 +215,6 @@ bot.onText(/^\/img (.+)/, (msg, match) => {
 });
 
 bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]?[.]?) (.+)$|([01][0-9]|2[0-3]):?([0-5][0-9]) (.+)$)/, (msg, match) => {
-
     if (match[1] !== undefined) { // IN 12-HOUR FORMAT
         var hour = Number(match[1]);
         var hour24 = hour;
@@ -236,7 +225,7 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
         }
         var minute = Number(match[2]);
         makeRecurrence(msg.chat.id, hour24, minute, match[4]).then(() => {
-            bot.sendMessage(msg.chat.id, `Saved (but not reloaded) Event: ${match[4]} will be repeated at ${hour}:${minute} ${timeType}`);
+            bot.sendMessage(msg.chat.id, `"${match[4]}" will be repeated at ${hour}:${minute} ${timeType}`);
         }).catch((error) => {
             bot.sendMessage(msg.chat.id, error);
         });
@@ -248,9 +237,27 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
             hour = hour - 12;
             timeType = 'p.m.';
         }
+        if (hour24 === 0) {
+            hour = '00';
+        }
         var minute = Number(match[6]);
+        var stringMinute = minute;
+        if (stringMinute === 0) {
+            stringMinute = '00';
+        }
         makeRecurrence(msg.chat.id, hour24, minute, match[7]).then(() => {
-            bot.sendMessage(msg.chat.id, `Saved (but not reloaded) Event: ${match[7]} will be repeated at ${hour}:${minute} ${timeType}`);
+            bot.sendMessage(msg.chat.id, `"${match[7]}" will be repeated at ${hour}:${stringMinute} ${timeType}`);
+        }).catch((error) => {
+            bot.sendMessage(msg.chat.id, error);
         });
     }
 });
+
+// bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
+//     findEvent(msg.chat.id, match[1]).then((result) => {
+//         console.log(result);
+//     });
+//     deleteRecurrence(msg.chat.id, match[1]).then(() => {
+//         bot.sendMessage(msg.chat.id, `"${match[1]}" no more!`)
+//     });
+// });
