@@ -9,19 +9,19 @@ var newImgSearch = require('g-i-s');
 var schedule = require('node-schedule');
 var mongo = require('mongodb').MongoClient;
 var assert = require('assert');
-// var express = require('express');
-// var app = express();
+var express = require('express');
+var app = express();
 var util = require('util');
 
-// app.set('port', (process.env.PORT || 5000));
+app.set('port', (process.env.PORT || 5000));
 
-// //For avoiding Heroku $PORT error
-// app.get('/', function(request, response) {
-//     var result = 'App is running'
-//     response.send(result);
-// }).listen(app.get('port'), function() {
-//     console.log('App is running, server is listening on port ', app.get('port'));
-// });
+//For avoiding Heroku $PORT error
+app.get('/', function(request, response) {
+    var result = 'App is running'
+    response.send(result);
+}).listen(app.get('port'), function() {
+    console.log('App is running, server is listening on port ', app.get('port'));
+});
 
 
 
