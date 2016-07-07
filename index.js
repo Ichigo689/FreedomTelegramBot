@@ -127,13 +127,13 @@ function makeRecurrence(chatId, hour, minute, message) {
                 bot.sendMessage(chatId, message);
             });
         }).then((result) => {
-            // var eventObject = {};
-            // eventObject[chatId] = runningEvents[chatId];
-            // saveEvent(eventObject).then(() => {
+            var eventObject = {};
+            eventObject[chatId] = runningEvents[chatId];
+            saveEvent(eventObject).then(() => {
 
-            // }).catch((error) => {
-            //     reject(error);
-            // })
+            }).catch((error) => {
+                reject(error);
+            });
         }).then(() => {
             resolve();
         }).catch((error) => {
