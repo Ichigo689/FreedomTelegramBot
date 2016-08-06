@@ -82,9 +82,14 @@ function ensureEmptyObj(obj) {
 function ensureEmptyMessage(chatId, message) {
     return new Promise((resolve, reject) => {
         if (chatId in runningEvents) {
-            if (message in runningEvents[chatId]) {
-                reject(`Event already exists! Try using "/addtime [time] [name]" instead.`);
-            }
+            runningEvents[chatId].forEach((element, index) => {
+                if (element.message === message) {
+                    reject(`Event already exists! Try using "/addtime [time] [name]" instead`);
+                }
+            });
+            // if (message in runningEvents[chatId]) {
+            //     reject(`Event already exists! Try using "/addtime [time] [name]" instead.`);
+            // }
         }
         resolve();
     });
@@ -92,50 +97,33 @@ function ensureEmptyMessage(chatId, message) {
 
 function newRecurrenceEvent(chatId, hour, minute, message) {
     return new Promise((resolve, reject) => {
-        var placeHolder = {};
+        var object = {}; // MESSAGE OBJ
+        var placeHolder = {}; // Whole MDB OBJ
         ensureEmptyMessage(chatId, message).then(() => {
+            // CURATE CHAT ARRAY
             if (!(chatId in runningEvents)) {
                 ensureEmptyObj(runningEvents[chatId]).then(() => {
-                    runningEvents[chatId] = {};
+                    runningEvents[chatId] = [];
                 });
             }
         }).then(() => {
-            placeHolder.chatInstance = runningEvents[chatId];
-            placeHolder.chatInstance[message] = [];
-            placeHolder.recurrence = placeHolder.chatInstance[message];
-            placeHolder.rule = { rule: {} };
+            // CURATE MESSAGE/RULE OBJECT
+            object.message = message;
+            object.times = [];
+            object.times.push({ rule: new schedule.RecurrenceRule()});
+            object.times[0].rule.hour = hour;
+            object.times[0].rule.minute = minute;
         }).then(() => {
-            placeHolder.rule.rule = new schedule.RecurrenceRule();
-            placeHolder.rule.rule.hour = hour;
-            placeHolder.rule.rule.minute = minute;
-        }).then(() => {
-            var recurrence = placeHolder.chatInstance[message];
-            recurrence.push(placeHolder.rule);
-        }).then(() => {
-            resolve(placeHolder);
-        }).catch((error) => {
-            reject(error);
-        });
-    });
-}
-
-function makeRecurrence(chatId, hour, minute, message) {
-    return new Promise((resolve, reject) => {
-        newRecurrenceEvent(chatId, hour, minute, message).then((placeHolder) => {
-            var recurrence = placeHolder.chatInstance[message];
-            recurrence[0].ruleInstance = schedule.scheduleJob(recurrence[0].rule, () => {
+            object.times[0].ruleInstance = schedule.scheduleJob(object.times[0].rule, () => {
                 bot.sendMessage(chatId, message);
             });
-        }).then((result) => {
-            var eventObject = {};
-            eventObject[chatId] = runningEvents[chatId];
-            saveEvent(eventObject).then(() => {
-
-            }).catch((error) => {
-                reject(error);
-            });
         }).then(() => {
-            resolve();
+            runningEvents[chatId].push(object);
+            placeHolder[chatId] = [object];
+        }).then(() => {
+            saveEvent(placeHolder).then(() => {
+                resolve();
+            });
         }).catch((error) => {
             reject(error);
         });
@@ -143,6 +131,7 @@ function makeRecurrence(chatId, hour, minute, message) {
 }
 
 function saveEvent (eventObject) {
+    // console.log(util.inspect(eventObject, {showHidden: false, depth: 10}));
     return new Promise((resolve, reject) => {
         mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
@@ -204,6 +193,28 @@ bot.onText(/^\/blaze/, (msg, match) => {
     });
 });
 
+// bot.onText(/^\/yt ?([.\d]{0,2}) (.+)/, (msg, match) => {
+//     var ytNumber = match[1] ? Number(match[1]) : 0;
+//     console.log('ytSearch', match[2]);
+
+// });
+
+bot.onText(/pull(?:ed|ing)? out/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, 'Excuse me? Say you\'re sorry\nNever ever pull out. - EP');
+});
+
+// bot.onText(/fuck you/i, (msg, match) => {
+//     bot.sendMessage(msg.chat.id, 'Yeah fuck you too!');
+// });
+
+bot.onText(/^fuck$/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. I prefer anal fisting. - EP`);
+});
+
+bot.onText(/^fuck (?:the|tha|da) (?:police)/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `Comin' straight from the underground.`);
+});
+
 bot.onText(/^\/img ?([.\d]{0,3}) (.+)/, (msg, match) => {
     if (match[2] === 'penis') {
         bot.sendMessage(msg.chat.id, 'why would you do that??!!');
@@ -225,8 +236,9 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
             hour24 = hour + 12;
         }
         var minute = Number(match[2]);
-        makeRecurrence(msg.chat.id, hour24, minute, match[4]).then(() => {
-            bot.sendMessage(msg.chat.id, `"${match[4]}" will be repeated at ${hour}:${minute} ${timeType}`);
+        var stringMinute = (minute === 0) ? '00' : match[2];
+        newRecurrenceEvent(msg.chat.id, hour24, minute, match[4]).then(() => {
+            bot.sendMessage(msg.chat.id, `"${match[4]}" will be repeated at ${hour}:${stringMinute} ${timeType}`);
         }).catch((error) => {
             bot.sendMessage(msg.chat.id, error);
         });
@@ -243,10 +255,8 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
         }
         var minute = Number(match[6]);
         var stringMinute = minute;
-        if (stringMinute === 0) {
-            stringMinute = '00';
-        }
-        makeRecurrence(msg.chat.id, hour24, minute, match[7]).then(() => {
+        var stringMinute = (minute === 0) ? '00' : match[6];
+        newRecurrenceEvent(msg.chat.id, hour24, minute, match[7]).then(() => {
             bot.sendMessage(msg.chat.id, `"${match[7]}" will be repeated at ${hour}:${stringMinute} ${timeType}`);
         }).catch((error) => {
             bot.sendMessage(msg.chat.id, error);
