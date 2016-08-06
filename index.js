@@ -192,7 +192,7 @@ bot.onText(/^\/freedom/, (msg, match) => {
         console.log(searches[randSearch], randSearch);
         bot.sendMessage(msg.chat.id, ('Searching for ' + searches[randSearch]) + ' ' + result[randImg].url);
     }).catch((error) => {
-        cosole.log(error);
+        console.log(error);
     });
 });
 
@@ -204,13 +204,14 @@ bot.onText(/^\/blaze/, (msg, match) => {
     });
 });
 
-bot.onText(/^\/img (.+)/, (msg, match) => {
-    if (match[1] === 'penis') {
+bot.onText(/^\/img ?([.\d]{0,3}) (.+)/, (msg, match) => {
+    if (match[2] === 'penis') {
         bot.sendMessage(msg.chat.id, 'why would you do that??!!');
     }
-    console.log('imgSearch', match[1]);
-    getImage(match[1]).then((result) => {
-        bot.sendMessage(msg.chat.id, result[0].url);
+    var imgNumber = match[1] ? Number(match[1]) : 0;
+    console.log('imgSearch', match[2]);
+    getImage(match[2]).then((result) => {
+        bot.sendMessage(msg.chat.id, result[imgNumber].url);
     });
 });
 
