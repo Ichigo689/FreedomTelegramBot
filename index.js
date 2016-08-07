@@ -7,6 +7,7 @@ var botApi = require('node-telegram-bot-api');
 var bot = new botApi(botToken, {polling: true});
 var newImgSearch = require('g-i-s');
 var schedule = require('node-schedule');
+var cronJob = require('cron').CronJob;
 var mongo = require('mongodb').MongoClient;
 var assert = require('assert');
 var express = require('express');
@@ -95,33 +96,73 @@ function ensureEmptyMessage(chatId, message) {
     });
 }
 
+// function newRecurrenceEvent(chatId, hour, minute, message) {
+//     return new Promise((resolve, reject) => {
+//         var object = {}; // MESSAGE OBJ
+//         var placeHolder = {}; // Whole MDB OBJ
+//         ensureEmptyMessage(chatId, message).then(() => {
+//             // CURATE CHAT ARRAY
+//             if (!(chatId in runningEvents)) {
+//                 ensureEmptyObj(runningEvents[chatId]).then(() => {
+//                     runningEvents[chatId] = [];
+//                 });
+//             }
+//         }).then(() => {
+//             // CURATE MESSAGE/RULE OBJECT
+//             object.message = message;
+//             object.times = [];
+//             object.times.push({ rule: new schedule.RecurrenceRule()});
+//             object.times[0].rule.hour = hour;
+//             object.times[0].rule.minute = minute;
+//         }).then(() => {
+//             object.times[0].ruleInstance = schedule.scheduleJob(object.times[0].rule, () => {
+//                 bot.sendMessage(chatId, message);
+//             });
+//         }).then(() => {
+//             runningEvents[chatId].push(object);
+//             placeHolder[chatId] = [object];
+//         }).then(() => {
+//             saveEvent(placeHolder).then(() => {
+//                 resolve();
+//             });
+//         }).catch((error) => {
+//             reject(error);
+//         });
+//     });
+// }
+
 function newRecurrenceEvent(chatId, hour, minute, message) {
     return new Promise((resolve, reject) => {
-        var object = {}; // MESSAGE OBJ
-        var placeHolder = {}; // Whole MDB OBJ
+        var object = {};
         ensureEmptyMessage(chatId, message).then(() => {
-            // CURATE CHAT ARRAY
+            // Create chat array and check if event exists
             if (!(chatId in runningEvents)) {
                 ensureEmptyObj(runningEvents[chatId]).then(() => {
                     runningEvents[chatId] = [];
                 });
             }
         }).then(() => {
-            // CURATE MESSAGE/RULE OBJECT
+            // Create rule OBJECT
             object.message = message;
-            object.times = [];
-            object.times.push({ rule: new schedule.RecurrenceRule()});
-            object.times[0].rule.hour = hour;
-            object.times[0].rule.minute = minute;
-        }).then(() => {
-            object.times[0].ruleInstance = schedule.scheduleJob(object.times[0].rule, () => {
-                bot.sendMessage(chatId, message);
-            });
-        }).then(() => {
-            runningEvents[chatId].push(object);
-            placeHolder[chatId] = [object];
-        }).then(() => {
-            saveEvent(placeHolder).then(() => {
+            object.times = [{
+                hour: hour,
+                minute: minute
+            }];
+            var eventObject = {};
+            eventObject[chatId] = [object];
+            saveEvent(eventObject).then(() => {
+
+            }).then(() => {
+                // make cron object after sending data to mongodb
+                object.times[0].cron = new cronJob({
+                    cronTime: `0 ${minute} ${hour} * * *`,
+                    onTick: () => {
+                    bot.sendMessage(chatId, message);
+                },
+                start: true});
+            }).then(() => {
+                runningEvents[chatId].push(object);
+            }).then(() => {
                 resolve();
             });
         }).catch((error) => {
