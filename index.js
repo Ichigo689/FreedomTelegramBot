@@ -14,15 +14,15 @@ var express = require('express');
 var app = express();
 var util = require('util');
 
-app.set('port', (process.env.PORT || 5000));
+// app.set('port', (process.env.PORT || 5000));
 
-//For avoiding Heroku $PORT error
-app.get('/', function(request, response) {
-    var result = 'App is running'
-    response.send(result);
-}).listen(app.get('port'), function() {
-    console.log('App is running, server is listening on port ', app.get('port'));
-});
+// //For avoiding Heroku $PORT error
+// app.get('/', function(request, response) {
+//     var result = 'App is running'
+//     response.send(result);
+// }).listen(app.get('port'), function() {
+//     console.log('App is running, server is listening on port ', app.get('port'));
+// });
 
 
 
@@ -138,7 +138,9 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
             // Create chat array and check if event exists
             if (!(chatId in runningEvents)) {
                 ensureEmptyObj(runningEvents[chatId]).then(() => {
-                    runningEvents[chatId] = [];
+                    runningEvents[chatId] = {
+                        events: []
+                    };
                 });
             }
         }).then(() => {
@@ -148,20 +150,18 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
                 hour: hour,
                 minute: minute
             }];
-            var eventObject = {};
-            eventObject[chatId] = [object];
+            var eventObject = { chatId: chatId };
+            eventObject.event = [object];
             saveEvent(eventObject).then(() => {
-
-            }).then(() => {
                 // make cron object after sending data to mongodb
                 object.times[0].cron = new cronJob({
-                    cronTime: `0 ${minute} ${hour} * * *`,
+                    cronTime: `5 ${minute} ${hour} * * *`,
                     onTick: () => {
                     bot.sendMessage(chatId, message);
                 },
                 start: true});
             }).then(() => {
-                runningEvents[chatId].push(object);
+                runningEvents[chatId].events.push(object);
             }).then(() => {
                 resolve();
             });
@@ -186,18 +186,18 @@ function saveEvent (eventObject) {
     });
 }
 
-function findEvent (chatId, eventName) {
+function findEvent (chatId, message) {
     return new Promise((resolve, reject) => {
         mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
-            var searchObject = {}
-            searchObject[chatId] = {};
-            searchObject[chatId][eventName] = {$size: {$gt: 0}};
-            var cursor = db.collection('Events').find(searchObject).each((error, document) => {
-                console.log(searchObject);
+            // var searchObject = {}
+            // searchObject[chatId] = [{message: message}];
+            var cursor = db.collection('Events').find({
+                "chatId": chatId,
+                "event.message": message
+            }).each((error, document) => {
                 assert.equal(null, error);
                 if (document) {
-                    console.log(document);
                     db.close();
                     resolve(document);
                 }
@@ -207,7 +207,34 @@ function findEvent (chatId, eventName) {
     });
 }
 
-function addEventTime (eventName, eventTime) {
+function deleteEvent (chatId, message) {
+    return new Promise((resolve, reject) => {
+        findEvent(chatId, message).then((document) => {
+            mongo.connect(mongoURL, (error, db) => {
+                assert.equal(null, error);
+                var cursor = db.collection('Events').deleteOne({
+                    "chatId": chatId,
+                    "event.message": message
+                }, (error, results) => {
+                    if (!error) {
+                        runningEvents[chatId].events.forEach((element, index) => {
+                            if (element.message === message) {
+                                runningEvents[chatId].events[index].times.forEach((eventE, eventI) => {
+                                    runningEvents[chatId].events[index].times[eventI].cron.stop();
+                                });
+                                runningEvents[chatId].events.splice(index, 1);
+                            }
+                        });
+                        console.log(runningEvents[chatId].events);
+                        resolve();
+                    }
+                });
+            });
+        });
+    });
+}
+
+function addEventTime (message, eventTime) {
 
 }
 
@@ -220,7 +247,7 @@ bot.onText(/^\/freedom/, (msg, match) => {
     getImage(searches[randSearch]).then((result) => {
         var randImg = Math.floor((Math.random() * result.length) + 1);
         console.log(searches[randSearch], randSearch);
-        bot.sendMessage(msg.chat.id, ('Searching for ' + searches[randSearch]) + ' ' + result[randImg].url);
+        bot.sendMessage(msg.chat.id, result[randImg].url);
     }).catch((error) => {
         console.log(error);
     });
@@ -305,11 +332,24 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
     }
 });
 
-// bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
-//     findEvent(msg.chat.id, match[1]).then((result) => {
-//         console.log(result);
-//     });
-//     deleteRecurrence(msg.chat.id, match[1]).then(() => {
-//         bot.sendMessage(msg.chat.id, `"${match[1]}" no more!`)
-//     });
-// });
+bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
+    deleteEvent(msg.chat.id, match[1]).then((result) => {
+        bot.sendMessage(msg.chat.id, `${match[1]} will no longer be repeated`);
+    });
+    // deleteRecurrence(msg.chat.id, match[1]).then(() => {
+    //     bot.sendMessage(msg.chat.id, `"${match[1]}" no more!`)
+    // });
+});
+
+// Testing thing
+
+bot.onText(/^\/iterate/, (msg, match) => {
+    var iteration = 1;
+    var test = new cronJob({
+                    cronTime: `0 */5 * * * *`,
+                    onTick: () => {
+                    bot.sendMessage(msg.chat.id, iteration);
+                    iteration++;
+                },
+                start: true});
+});

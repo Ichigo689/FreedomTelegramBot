@@ -17,7 +17,6 @@
     "g-i-s": "^2.0.0",
     "mongodb": "^2.1.18",
     "newrelic": "^1.28.1",
-    "node-schedule": "^1.1.1",
     "node-telegram-bot-api": "^0.23.3"
   },
   "devDependencies": {}
