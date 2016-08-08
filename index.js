@@ -353,3 +353,7 @@ bot.onText(/^\/iterate/, (msg, match) => {
                 },
                 start: true});
 });
+
+bot.onText(/^\/listevents/, (msg, match) => {
+    console.log(runningEvents[msg.chat.id].events);
+});
