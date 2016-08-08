@@ -360,7 +360,7 @@ bot.onText(/^\/listevents/, (msg, match) => {
     console.log(runningEvents[msg.chat.id].events);
 });
 
-bot.ontext(/^\/time/, (msg, match) => {
+bot.onText(/^\/time/, (msg, match) => {
     var time = new Date()
     bot.sendMessage(msg.chat.id, time.getHours() + ':' + time.getMinutes());
 });
