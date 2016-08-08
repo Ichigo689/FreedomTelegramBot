@@ -159,7 +159,9 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
                     onTick: () => {
                     bot.sendMessage(chatId, message);
                 },
-                start: true});
+                start: true,
+                timeZone: 'America/New_York'
+                });
             }).then(() => {
                 runningEvents[chatId].events.push(object);
             }).then(() => {
@@ -343,17 +345,22 @@ bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
 
 // Testing thing
 
-bot.onText(/^\/iterate/, (msg, match) => {
-    var iteration = 1;
-    var test = new cronJob({
-                    cronTime: `0 */5 * * * *`,
-                    onTick: () => {
-                    bot.sendMessage(msg.chat.id, iteration);
-                    iteration++;
-                },
-                start: true});
-});
+// bot.onText(/^\/iterate/, (msg, match) => {
+//     var iteration = 1;
+//     var test = new cronJob({
+//                     cronTime: `0 */5 * * * *`,
+//                     onTick: () => {
+//                     bot.sendMessage(msg.chat.id, iteration);
+//                     iteration++;
+//                 },
+//                 start: true});
+// });
 
 bot.onText(/^\/listevents/, (msg, match) => {
     console.log(runningEvents[msg.chat.id].events);
+});
+
+bot.ontext(/^\/time/, (msg, match) => {
+    var time = new Date()
+    bot.sendMessage(msg.chat.id, time.getHours() + ':' + time.getMinutes());
 });
