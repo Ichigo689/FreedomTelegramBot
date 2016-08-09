@@ -6,6 +6,7 @@ var mongoURL = process.env.MONGODB_URI || 'mongodb://heroku_7m7cx5b3:j1e3l4slk9t
 var botApi = require('node-telegram-bot-api');
 var bot = new botApi(botToken, {polling: true});
 var newImgSearch = require('g-i-s');
+var cowsay = require('cowsay');
 var schedule = require('node-schedule');
 var cronJob = require('cron').CronJob;
 var mongo = require('mongodb').MongoClient;
@@ -29,42 +30,15 @@ app.get('/', function(request, response) {
 
 // BOT FUNCTIONS
 
-var searches = [
-    'American Flag',
-    'Statue of Liberty',
-    'America',
-    'American Freedom',
-    'American Constitution',
-    'Uncle Sam',
-    'Monster Truck',
-    'American Flag Car',
-    `'Murica`,
-    'Merica',
-    '1950s Cars',
-    'Bald Eagle',
-    'FBI',
-    'CIA',
-    'US Government',
-    'United States',
-    'M16',
-    'Texas',
-    'Cowboys',
-    'Patriots',
-    'American Bald Eagle',
-    'Burger',
-    'Hot Dog'
-]
+var searches = ['American Flag', 'Statue of Liberty', 'America', 'American Freedom', 'American Constitution', 'Uncle Sam', 'Monster Truck', 'American Flag Car', `'Murica`, 'Merica', '1950s Cars', 'Bald Eagle', 'FBI', 'CIA', 'US Government', 'United States', 'M16', 'Texas', 'Cowboys', 'Patriots', 'American Bald Eagle', 'Burger', 'Hot Dog']
 
 var runningEvents = {};
 
 function getImage(query) {
     return new Promise((resolve, reject) => {
         newImgSearch(query, (error, results) => {
-            if (!error) {
-                resolve(results);
-            } else {
-                reject(error);
-            }
+            if (!error) { resolve(results) };
+            reject(error);
         });
     });
 }
@@ -88,48 +62,10 @@ function ensureEmptyMessage(chatId, message) {
                     reject(`Event already exists! Try using "/addtime [time] [name]" instead`);
                 }
             });
-            // if (message in runningEvents[chatId]) {
-            //     reject(`Event already exists! Try using "/addtime [time] [name]" instead.`);
-            // }
         }
         resolve();
     });
 }
-
-// function newRecurrenceEvent(chatId, hour, minute, message) {
-//     return new Promise((resolve, reject) => {
-//         var object = {}; // MESSAGE OBJ
-//         var placeHolder = {}; // Whole MDB OBJ
-//         ensureEmptyMessage(chatId, message).then(() => {
-//             // CURATE CHAT ARRAY
-//             if (!(chatId in runningEvents)) {
-//                 ensureEmptyObj(runningEvents[chatId]).then(() => {
-//                     runningEvents[chatId] = [];
-//                 });
-//             }
-//         }).then(() => {
-//             // CURATE MESSAGE/RULE OBJECT
-//             object.message = message;
-//             object.times = [];
-//             object.times.push({ rule: new schedule.RecurrenceRule()});
-//             object.times[0].rule.hour = hour;
-//             object.times[0].rule.minute = minute;
-//         }).then(() => {
-//             object.times[0].ruleInstance = schedule.scheduleJob(object.times[0].rule, () => {
-//                 bot.sendMessage(chatId, message);
-//             });
-//         }).then(() => {
-//             runningEvents[chatId].push(object);
-//             placeHolder[chatId] = [object];
-//         }).then(() => {
-//             saveEvent(placeHolder).then(() => {
-//                 resolve();
-//             });
-//         }).catch((error) => {
-//             reject(error);
-//         });
-//     });
-// }
 
 function newRecurrenceEvent(chatId, hour, minute, message) {
     return new Promise((resolve, reject) => {
@@ -178,7 +114,6 @@ function saveEvent (eventObject) {
     return new Promise((resolve, reject) => {
         mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
-            
             db.collection('Events').insertOne(eventObject, (error, result) => {
                 assert.equal(null, error);
                 db.close();
@@ -192,8 +127,6 @@ function findEvent (chatId, message) {
     return new Promise((resolve, reject) => {
         mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
-            // var searchObject = {}
-            // searchObject[chatId] = [{message: message}];
             var cursor = db.collection('Events').find({
                 "chatId": chatId,
                 "event.message": message
@@ -360,6 +293,26 @@ bot.onText(/^\/listevents/, (msg, match) => {
     if (runningEvents[msg.chat.id] && runningEvents[msg.chat.id].events.length > 0) {
         runningEvents[msg.chat.id].events.forEach((element, index) => {
             eventString = eventString + '\n' + element.message;
+            element.times.forEach((tElement, tIndex) => {
+                var timeSegment = '';
+                if (tElement.hour === 0) {
+                    tElement.hour = 12
+                    timeSegment = 'a.m.';
+                } else if (tElement.hour > 12) {
+                    tElement.hour = tElement.hour - 12;
+                    timeSegment = 'p.m.';
+                }
+                if (tElement.minute === 0) {
+                    tElement.minute = tElement.minute + '0';
+                } else if (tElement.minute > 0 && tElement.minute < 10) {
+                    tElement.minute = '0' + tElement.minute;
+                }
+                if (index === 0) {
+                    eventString = eventString + ': ' + tElement.hour + ':' + tElement.minute + ' ' + timeSegment;
+                } else {
+                    eventString = eventString + ', ' + tElement.hour + ':' + tElement.minute + ' ' + timeSegment;
+                }
+            });
         });
     } else {
         eventString = `No events running. Use "/addevent [time] [name] to make one!"`;
@@ -370,4 +323,10 @@ bot.onText(/^\/listevents/, (msg, match) => {
 bot.onText(/^\/time/, (msg, match) => {
     var time = new Date();
     bot.sendMessage(msg.chat.id, 'Server time: ' + time.toTimeString());
+});
+
+bot.onText(/^\/cowsay (.+)$/, (msg, match) => {
+    bot.sendMessage(msg.chat.id, cowsay.say({
+        text: match[1]
+    }));
 });
