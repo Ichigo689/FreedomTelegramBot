@@ -162,6 +162,7 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
                 start: true,
                 timeZone: 'America/New_York'
                 });
+                console.log('object', object);
             }).then(() => {
                 runningEvents[chatId].events.push(object);
             }).then(() => {
@@ -358,6 +359,11 @@ bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
 
 bot.onText(/^\/listevents/, (msg, match) => {
     console.log(runningEvents[msg.chat.id].events);
+    var eventString = 'All events';
+    runningEvents[msg.chat.id].events.forEach((element, index) => {
+        eventString = eventString + '\n' + element.message;
+    });
+    bot.sendMessage(msg.chat.id, eventString);
 });
 
 bot.onText(/^\/time/, (msg, match) => {
