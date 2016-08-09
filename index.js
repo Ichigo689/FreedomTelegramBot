@@ -83,7 +83,7 @@ function ensureEmptyObj(obj) {
 function ensureEmptyMessage(chatId, message) {
     return new Promise((resolve, reject) => {
         if (chatId in runningEvents) {
-            runningEvents[chatId].forEach((element, index) => {
+            runningEvents[chatId].events.forEach((element, index) => {
                 if (element.message === message) {
                     reject(`Event already exists! Try using "/addtime [time] [name]" instead`);
                 }
@@ -162,7 +162,6 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
                 start: true,
                 timeZone: 'America/New_York'
                 });
-                console.log('object', object);
             }).then(() => {
                 runningEvents[chatId].events.push(object);
             }).then(() => {
@@ -228,7 +227,6 @@ function deleteEvent (chatId, message) {
                                 runningEvents[chatId].events.splice(index, 1);
                             }
                         });
-                        console.log(runningEvents[chatId].events);
                         resolve();
                     }
                 });
@@ -358,15 +356,18 @@ bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
 // });
 
 bot.onText(/^\/listevents/, (msg, match) => {
-    console.log(runningEvents[msg.chat.id].events);
     var eventString = 'All events';
-    runningEvents[msg.chat.id].events.forEach((element, index) => {
-        eventString = eventString + '\n' + element.message;
-    });
+    if (runningEvents[msg.chat.id] && runningEvents[msg.chat.id].events.length > 0) {
+        runningEvents[msg.chat.id].events.forEach((element, index) => {
+            eventString = eventString + '\n' + element.message;
+        });
+    } else {
+        eventString = `No events running. Use "/addevent [time] [name] to make one!"`;
+    }
     bot.sendMessage(msg.chat.id, eventString);
 });
 
 bot.onText(/^\/time/, (msg, match) => {
-    var time = new Date()
-    bot.sendMessage(msg.chat.id, time.getHours() + ':' + time.getMinutes());
+    var time = new Date();
+    bot.sendMessage(msg.chat.id, 'Server time: ' + time.toTimeString());
 });
