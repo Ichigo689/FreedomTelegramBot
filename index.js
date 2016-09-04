@@ -4,7 +4,7 @@ require('newrelic');
 var botToken = "263345256:AAGQVyxcJ6NFyRjYu9h-Iq6nS2QTBUM_NfE";
 var mongoURL = process.env.MONGODB_URI || 'mongodb://heroku_7m7cx5b3:j1e3l4slk9tson1kd1n6pi0ccb@ds011705.mlab.com:11705/heroku_7m7cx5b3';
 var botApi = require('node-telegram-bot-api');
-var bot = new botApi(botToken, {polling: true});
+var bot = new botApi(botToken, { polling: true });
 var newImgSearch = require('g-i-s');
 var cowsay = require('cowsay');
 var schedule = require('node-schedule');
@@ -18,14 +18,15 @@ var util = require('util');
 app.set('port', (process.env.PORT || 5000));
 
 //For avoiding Heroku $PORT error
-app.get('/', function(request, response) {
+app.get('/', function (request, response) {
     var result = 'App is running'
     response.send(result);
-}).listen(app.get('port'), function() {
+}).listen(app.get('port'), function () {
     console.log('App is running, server is listening on port ', app.get('port'));
 });
 
-
+// INITIALIZING Events
+initializeEvents();
 
 
 // BOT FUNCTIONS
@@ -67,6 +68,23 @@ function ensureEmptyMessage(chatId, message) {
     });
 }
 
+function ensureEmptyTime(chatId, hour, minute, message) {
+    return new Promise((resolve, reject) => {
+        var eventIndex = null;
+        runningEvents[chatId].events.forEach((element, index) => {
+            if (element.message === message) {
+                eventIndex = index;
+                element.times.forEach((tElement, tIndex) => {
+                    if (element.hour === hour && element.minute === minute) {
+                        reject(`Event already exists! try using "/addtime [time] [name]" instead`);
+                    }
+                });
+            }
+        });
+        resolve(eventIndex);
+    });
+}
+
 function newRecurrenceEvent(chatId, hour, minute, message) {
     return new Promise((resolve, reject) => {
         var object = {};
@@ -91,12 +109,12 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
             saveEvent(eventObject).then(() => {
                 // make cron object after sending data to mongodb
                 object.times[0].cron = new cronJob({
-                    cronTime: `5 ${minute} ${hour} * * *`,
+                    cronTime: `1 ${minute} ${hour} * * *`,
                     onTick: () => {
-                    bot.sendMessage(chatId, message);
-                },
-                start: true,
-                timeZone: 'America/New_York'
+                        bot.sendMessage(chatId, message);
+                    },
+                    start: true,
+                    timeZone: 'America/New_York'
                 });
             }).then(() => {
                 runningEvents[chatId].events.push(object);
@@ -109,21 +127,126 @@ function newRecurrenceEvent(chatId, hour, minute, message) {
     });
 }
 
-function saveEvent (eventObject) {
-    // console.log(util.inspect(eventObject, {showHidden: false, depth: 10}));
+function newRecurrenceTime(chatId, hour, minute, message) {
     return new Promise((resolve, reject) => {
-        mongo.connect(mongoURL, (error, db) => {
-            assert.equal(null, error);
-            db.collection('Events').insertOne(eventObject, (error, result) => {
-                assert.equal(null, error);
-                db.close();
-                resolve();
+        ensureEmptyMessage(chatId, message).then(() => {
+            reject(`Event does not exist! Use "/addevent [time] [name]" to add a new event`);
+        }).catch(() => {
+            ensureEmptyTime(chatId, hour, minute, message).then((eventIndex) => {
+                var timesObject = {
+                    hour: hour,
+                    minute: minute
+                };
+                addEventTime(chatId, timesObject, message).then(() => {
+                    timesObject.cron = new cronJob({
+                        cronTime: `5 ${minute} ${hour} * * *`,
+                        onTick: () => {
+                            bot.sendMessage(chatId, message);
+                        },
+                        start: true,
+                        timeZone: 'America/New_York'
+                    });
+                    runningEvents[chatId].events[eventIndex].times.push(timesObject);
+                }).then(() => {
+                    resolve();
+                });
+            }).catch((error) => {
+                reject(error);
             });
         });
     });
 }
 
-function findEvent (chatId, message) {
+function saveEvent(eventObject) {
+    return new Promise((resolve, reject) => {
+        findEvent(eventObject.chatId).then(() => {
+            findMessage(eventObject.chatId, eventObject.event[0].message).then(() => {
+                mongo.connect(mongoURL, (error, db) => {
+                    assert.equal(null, error);
+                    db.collection('Events').find({
+                        'chatId': eventObject.chatId,
+                        'event.message': eventObject.event[0].message
+                    }).each((error, document) => {
+                        assert.equal(null, error);
+                        if (document) {
+                            document.event.forEach((element, index) => {
+                                if (element.message === eventObject.event[0].message) {
+                                    document.event[index].times.push(eventObject.event[0].times);
+                                }
+                            });
+                        }
+                        db.collection('Events').findOneAndReplace({
+                            'chatId': eventObject.chatId,
+                            'event.message': eventObject.event[0].message
+                        },
+                            document, {
+                                returnOriginal: false
+                            }, (error, result) => {
+                                assert.equal(null, error);
+                                db.close();
+                                resolve();
+                            });
+                    });
+                });
+            }).catch(() => {
+                mongo.connect(mongoURL, (error, db) => {
+                    assert.equal(null, error);
+                    var cursor = db.collection('Events').find({
+                        "chatId": eventObject.chatId
+                    }).each((error, document) => {
+                        assert.equal(null, error);
+                        if (document) {
+                            document.event.push(eventObject.event[0]);
+                            db.collection('Events').findOneAndReplace({
+                                "chatId": eventObject.chatId
+                            },
+                                document, {
+                                    returnOriginal: false
+                                }, (error, result) => {
+                                    assert.equal(null, error);
+                                    db.close();
+                                    resolve();
+                                });
+                        }
+                    });
+                });
+            });
+        }).catch(() => {
+            mongo.connect(mongoURL, (error, db) => {
+                db.collection('Events').insertOne(eventObject, (error, result) => {
+                    assert.equal(null, error);
+                    db.close();
+                    resolve();
+                });
+            });
+        });
+    });
+}
+
+function findEvent(chatId) {
+    return new Promise((resolve, reject) => {
+        mongo.connect(mongoURL, (error, db) => {
+            assert.equal(null, error);
+            db.collection('Events').find({
+                "chatId": chatId
+            }).each((error, document) => {
+                assert.equal(null, error);
+                if (document) {
+                    if ('chatId' in document) {
+                        resolve();
+                        db.close();
+                    } else {
+                        reject();
+                    }
+                } else {
+                    reject();
+                }
+            });
+        });
+    });
+}
+
+function findMessage(chatId, message) {
     return new Promise((resolve, reject) => {
         mongo.connect(mongoURL, (error, db) => {
             assert.equal(null, error);
@@ -133,34 +256,55 @@ function findEvent (chatId, message) {
             }).each((error, document) => {
                 assert.equal(null, error);
                 if (document) {
-                    db.close();
-                    resolve(document);
+                    if ('chatId' in document) {
+                        resolve();
+                        db.close();
+                    } else {
+                        reject();
+                    }
+                } else {
+                    reject();
                 }
-                db.close();
             });
         });
     });
 }
 
-function deleteEvent (chatId, message) {
+function deleteEvent(chatId, message) {
     return new Promise((resolve, reject) => {
-        findEvent(chatId, message).then((document) => {
+        findMessage(chatId, message).then((document) => {
             mongo.connect(mongoURL, (error, db) => {
                 assert.equal(null, error);
-                var cursor = db.collection('Events').deleteOne({
-                    "chatId": chatId,
-                    "event.message": message
-                }, (error, results) => {
-                    if (!error) {
-                        runningEvents[chatId].events.forEach((element, index) => {
+                db.collection('Events').find({
+                    'chatId': chatId,
+                    'event.message': message
+                }).each((error, document) => {
+                    assert.equal(null, error);
+                    if (document) {
+                        document.event.forEach((element, index) => {
                             if (element.message === message) {
-                                runningEvents[chatId].events[index].times.forEach((eventE, eventI) => {
-                                    runningEvents[chatId].events[index].times[eventI].cron.stop();
-                                });
-                                runningEvents[chatId].events.splice(index, 1);
+                                document.event.splice(index, 1);
                             }
                         });
-                        resolve();
+                        db.collection('Events').findOneAndReplace({
+                            'chatId': chatId,
+                            'event.message': message
+                        },
+                            document, {
+                                returnOriginal: false
+                            }, (error, result) => {
+                                assert.equal(null, error);
+                                db.close();
+                                runningEvents[chatId].events.forEach((element, index) => {
+                                    if (element.message === message) {
+                                        runningEvents[chatId].events[index].times.forEach((eventE, eventI) => {
+                                            runningEvents[chatId].events[index].times[eventI].cron.stop();
+                                        });
+                                        runningEvents[chatId].events.splice(index, 1);
+                                    }
+                                });
+                                resolve();
+                            });
                     }
                 });
             });
@@ -168,8 +312,72 @@ function deleteEvent (chatId, message) {
     });
 }
 
-function addEventTime (message, eventTime) {
+function addEventTime(chatId, timeObject, message) {
+    return new Promise((resolve, reject) => {
+        findMessage(chatId, message).then((document) => {
+            mongo.connect(mongoURL, (error, db) => {
+                assert.equal(null, error);
+                var cursor = db.collection('Events').find({
+                    "chatId": chatId,
+                    "event.message": message
+                }).each((error, document) => {
+                    assert.equal(null, error);
+                    if (document) {
+                        document.event.forEach((element, index) => {
+                            if (element.message === message) {
+                                document.event[index].times.push(timeObject);
+                            }
+                        });
+                        db.collection('Events').findOneAndReplace({
+                            "chatId": chatId,
+                            "event.message": message
+                        },
+                            document, {
+                                returnOriginal: false
+                            }, (error, result) => {
+                                assert.equal(null, error);
+                                db.close();
+                                resolve();
+                            });
+                    }
+                });
+            });
+        });
+    });
+}
 
+function initializeEvents() {
+    mongo.connect(mongoURL, (error, db) => {
+        assert.equal(null, error);
+        var cursor = db.collection('Events').find().each((error, document) => {
+            assert.equal(null, error);
+            var runningObject = {};
+            if (document) {
+                if (!(document.chatId in runningObject)) {
+                    runningObject[document.chatId] = { events: [] };
+                }
+                document.event.forEach((element, index) => {
+                    var object = {};
+                    object.message = element.message;
+                    object.times = [];
+                    objectTimesCount = 0;
+                    element.times.forEach((tElement, tIndex) => {
+                        object.times.push(tElement);
+                        object.times[objectTimesCount].cron = new cronJob({
+                            cronTime: `1 ${tElement.minute} ${tElement.hour} * * *`,
+                            onTick: () => {
+                                bot.sendMessage(document.chatId, element.message);
+                            },
+                            start: true,
+                            timeZone: 'America/New_York'
+                        });
+                    });
+                    runningObject[document.chatId].events.push(object);
+                });
+                runningEvents = runningObject;
+            }
+        });
+    });
 }
 
 
@@ -217,6 +425,10 @@ bot.onText(/^fuck (?:the|tha|da) (?:police)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Comin' straight from the underground.`);
 });
 
+// bot.onText(/(?:t(?:hank(?:s))?) *(?:you|u|)/i, (msg, match) => {
+//     bot.sendMessage(msg.chat.id, `love you long time`);
+// });
+
 bot.onText(/^\/img ?([.\d]{0,3}) (.+)/, (msg, match) => {
     if (match[2] === 'penis') {
         bot.sendMessage(msg.chat.id, 'why would you do that??!!');
@@ -260,6 +472,44 @@ bot.onText(/^\/(?:addevent) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]
         var stringMinute = (minute === 0) ? '00' : match[6];
         newRecurrenceEvent(msg.chat.id, hour24, minute, match[7]).then(() => {
             bot.sendMessage(msg.chat.id, `"${match[7]}" will be repeated at ${hour}:${stringMinute} ${timeType}`);
+        }).catch((error) => {
+            bot.sendMessage(msg.chat.id, error);
+        });
+    }
+});
+
+bot.onText(/^\/(?:addtime) (?:([0-9]|1[0-2]):?([0-5][0-9]) ?(?:([apAP])[.]?[mM]?[.]?) (.+)$|([01][0-9]|2[0-3]):?([0-5][0-9]) (.+)$)/, (msg, match) => {
+    if (match[1] !== undefined) { // IN 12-HOUR FORMAT
+        var hour = Number(match[1]);
+        var hour24 = hour;
+        var timeType = 'a.m.';
+        if (match[3] === 'p' || match[3] === 'P') {
+            timeType = 'p.m.';
+            hour24 = hour + 12;
+        }
+        var minute = Number(match[2]);
+        var stringMinute = (minute === 0) ? '00' : match[2];
+        newRecurrenceTime(msg.chat.id, hour24, minute, match[4]).then(() => {
+            bot.sendMessage(msg.chat.id, `"${match[4]}" will be repeated at ${hour}:${stringMinute} ${timeType} as well`);
+        }).catch((error) => {
+            bot.sendMessage(msg.chat.id, error);
+        });
+    } else {
+        var hour24 = Number(match[5]);
+        var hour = hour24;
+        var timeType = 'a.m.';
+        if (hour24 > 12) {
+            hour = hour - 12;
+            timeType = 'p.m.';
+        }
+        if (hour24 === 0) {
+            hour = '00';
+        }
+        var minute = Number(match[6]);
+        var stringMinute = minute;
+        var stringMinute = (minute === 0) ? '00' : match[6];
+        newRecurrenceTime(msg.chat.id, hour24, minute, match[7]).then(() => {
+            bot.sendMessage(msg.chat.id, `"${match[7]}" will be repeated at ${hour}:${stringMinute} ${timeType} as well`);
         }).catch((error) => {
             bot.sendMessage(msg.chat.id, error);
         });
@@ -318,6 +568,10 @@ bot.onText(/^\/listevents/, (msg, match) => {
         eventString = `No events running. Use "/addevent [time] [name] to make one!"`;
     }
     bot.sendMessage(msg.chat.id, eventString);
+});
+
+bot.onText(/^\/debugEvents/, (msg, match) => {
+    console.log(runningEvents);
 });
 
 bot.onText(/^\/time/, (msg, match) => {
