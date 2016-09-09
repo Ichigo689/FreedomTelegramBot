@@ -7,7 +7,7 @@ var botApi = require('node-telegram-bot-api');
 var bot = new botApi(botToken, { polling: true });
 var newImgSearch = require('g-i-s');
 var cowsay = require('cowsay');
-var schedule = require('node-schedule');
+// var schedule = require('node-schedule');
 var cronJob = require('cron').CronJob;
 var mongo = require('mongodb').MongoClient;
 var assert = require('assert');
@@ -31,7 +31,7 @@ initializeEvents();
 
 // BOT FUNCTIONS
 
-var searches = ['American Flag', 'Statue of Liberty', 'America', 'American Freedom', 'American Constitution', 'Uncle Sam', 'Monster Truck', 'American Flag Car', `'Murica`, 'Merica', '1950s Cars', 'Bald Eagle', 'FBI', 'CIA', 'US Government', 'United States', 'M16', 'Texas', 'Cowboys', 'Patriots', 'American Bald Eagle', 'Burger', 'Hot Dog']
+var searches = ['American Flag', 'Statue of Liberty', 'America', 'American Freedom', 'American Constitution', 'Uncle Sam', 'Monster Truck', 'American Flag Car', `'Murica`, 'Merica', '1950s Cars', 'Bald Eagle', 'US Government', 'United States', 'M16', 'M4', 'Texas', 'American Bald Eagle', 'Burger', 'Hot Dog']
 
 var runningEvents = {};
 
@@ -409,8 +409,19 @@ bot.onText(/^\/blaze/, (msg, match) => {
 
 // });
 
-bot.onText(/pull(?:ed|ing)? out/i, (msg, match) => {
-    bot.sendMessage(msg.chat.id, 'Excuse me? Say you\'re sorry\nNever ever pull out. - EP');
+bot.onText(/(?:(never)|(don(?:')t)|(won(?:')t|(not)|(no)))? ?pull(?:ed|ing)? out/i, (msg, match) => {
+    if (!match[1]) {
+        bot.sendMessage(msg.chat.id, 'Excuse me? Say you\'re sorry\nNever ever pull out. - EP').then((result) => {
+            console.log('result', result);
+        });
+        bot.onReplyToMessage(msg.chat.id, msg.message_id, (reply) => {
+            var replyRegEx = /(?:sorry)|(?:whip out)|(?:(?:never)(?:pull out)?)/i;
+
+            if (replyRegEx.test(reply.reply_to_message.text)) {
+                bot.sendMessage(msg.chat.id, 'Good.');
+            }
+        });
+    }
 });
 
 // bot.onText(/fuck you/i, (msg, match) => {
@@ -525,19 +536,6 @@ bot.onText(/^\/(?:deleteevent) (.+)$/, (msg, match) => {
     // });
 });
 
-// Testing thing
-
-// bot.onText(/^\/iterate/, (msg, match) => {
-//     var iteration = 1;
-//     var test = new cronJob({
-//                     cronTime: `0 */5 * * * *`,
-//                     onTick: () => {
-//                     bot.sendMessage(msg.chat.id, iteration);
-//                     iteration++;
-//                 },
-//                 start: true});
-// });
-
 bot.onText(/^\/listevents/, (msg, match) => {
     var eventString = 'All events';
     if (runningEvents[msg.chat.id] && runningEvents[msg.chat.id].events.length > 0) {
@@ -558,9 +556,9 @@ bot.onText(/^\/listevents/, (msg, match) => {
                     tElement.minute = '0' + tElement.minute;
                 }
                 if (index === 0) {
-                    eventString = eventString + ': ' + tElement.hour + ':' + tElement.minute + ' ' + timeSegment;
+                    eventString = eventString + ' - ' + tElement.hour + ':' + tElement.minute + ' ' + timeSegment;
                 } else {
-                    eventString = eventString + ', ' + tElement.hour + ':' + tElement.minute + ' ' + timeSegment;
+                    eventString = eventString + ' - ' + tElement.hour + ':' + tElement.minute + ' ' + timeSegment;
                 }
             });
         });
@@ -568,10 +566,6 @@ bot.onText(/^\/listevents/, (msg, match) => {
         eventString = `No events running. Use "/addevent [time] [name] to make one!"`;
     }
     bot.sendMessage(msg.chat.id, eventString);
-});
-
-bot.onText(/^\/debugEvents/, (msg, match) => {
-    console.log(runningEvents);
 });
 
 bot.onText(/^\/time/, (msg, match) => {
