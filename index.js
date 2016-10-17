@@ -429,11 +429,26 @@ bot.onText(/(?:(never)|(don(?:')t)|(won(?:')t|(not)|(no)))? ?pull(?:ed|ing)? out
 // });
 
 bot.onText(/^fuck$/i, (msg, match) => {
-    bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. I prefer anal fisting. - EP`);
+    var remark = ["I prefer anal fisting.", "I prefer anal fishing.", "I prefer oral fisting.", "I prefer oral fishing."];
+    var randRemark = Math.floor((Math.random() * remark.length) + 1);
+
+    bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. ${remark[randRemark]}`);
+});
+
+bot.onText(/how?/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `Fuck if I know.`);
 });
 
 bot.onText(/^fuck (?:the|tha|da) (?:police)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Comin' straight from the underground.`);
+});
+
+bot.onText(/ain't nothing to it/, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `Gangsta rap made me do it.`);
+});
+
+bot.onText(/^solid/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `I've been at half mast for the past hour.`);
 });
 
 // bot.onText(/(?:t(?:hank(?:s))?) *(?:you|u|)/i, (msg, match) => {
