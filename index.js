@@ -439,6 +439,10 @@ bot.onText(/how?/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Fuck if I know.`);
 });
 
+bot.onText(/guess what?/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `Fucked your mom last night.`);
+});
+
 bot.onText(/^fuck (?:the|tha|da) (?:police)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Comin' straight from the underground.`);
 });
