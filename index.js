@@ -435,7 +435,7 @@ bot.onText(/^fuck$/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. ${remark[randRemark]}`);
 });
 
-bot.onText(/how?/i, (msg, match) => {
+bot.onText(/(?:how?)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Fuck if I know.`);
 });
 
