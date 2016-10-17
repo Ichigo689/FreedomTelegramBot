@@ -443,6 +443,10 @@ bot.onText(/(?:why\?)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Becuase fuck you thats why.`);
 });
 
+bot.onText(/I swear to fuck/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `I'll fucking kiss you on the mouth`);
+});
+
 bot.onText(/guess what?/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Fucked your mom last night.`);
 });
