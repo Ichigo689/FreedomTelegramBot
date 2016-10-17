@@ -435,8 +435,12 @@ bot.onText(/^fuck$/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. ${remark[randRemark]}`);
 });
 
-bot.onText(/(?:how\?)|(?:why\?)/i, (msg, match) => {
+bot.onText(/(?:how\?)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Fuck if I know.`);
+});
+
+bot.onText(/(?:why\?)/i, (msg, match) => {
+    bot.sendMessage(msg.chat.id, `Becuase fuck you thats why.`);
 });
 
 bot.onText(/guess what?/i, (msg, match) => {
