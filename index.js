@@ -429,10 +429,10 @@ bot.onText(/(?:(never)|(don(?:')t)|(won(?:')t|(not)|(no)))? ?pull(?:ed|ing)? out
 // });
 
 bot.onText(/^fuck$/i, (msg, match) => {
-    var remark = ["I prefer anal fisting.", "I prefer anal fishing.", "I prefer oral fisting.", "I prefer oral fishing."];
+    var remark = ["anal fisting", "anal fishing", "oral fisting", "oral fishing"];
     var randRemark = Math.floor((Math.random() * remark.length) + 1);
 
-    bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. ${remark[randRemark]}`);
+    bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. I prefer ${remark[randRemark]}.`);
 });
 
 bot.onText(/(?:how\?)/i, (msg, match) => {
@@ -440,22 +440,26 @@ bot.onText(/(?:how\?)/i, (msg, match) => {
 });
 
 bot.onText(/(?:why\?)/i, (msg, match) => {
-    bot.sendMessage(msg.chat.id, `Becuase fuck you thats why.`);
+    bot.sendMessage(msg.chat.id, `Because fuck you that's why.`);
 });
 
 bot.onText(/I swear to fuck/i, (msg, match) => {
-    bot.sendMessage(msg.chat.id, `I'll fucking kiss you on the mouth`);
+    var remark = [`I'll fucking kiss you on the mouth.`, `I'll fucking kill you in your sleep.`]
+    var randRemark = Math.floor((Math.random() * remark.length) + 1);
+    bot.sendMessage(msg.chat.id, remark[randRemark]);
 });
 
 bot.onText(/guess what?/i, (msg, match) => {
-    bot.sendMessage(msg.chat.id, `Fucked your mom last night.`);
+    var remark = [`Fucked your mom last night.`, `Did your mom last night`, `Did\nYour\nMom!`]
+    var randRemark = Math.floor((Math.random() * remark.length) + 1);
+    bot.sendMessage(msg.chat.id, remark[randRemark]);
 });
 
 bot.onText(/^fuck (?:the|tha|da) (?:police)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Comin' straight from the underground.`);
 });
 
-bot.onText(/ain't nothing to it/, (msg, match) => {
+bot.onText(/ain'?t nothing to it/, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Gangsta rap made me do it.`);
 });
 
