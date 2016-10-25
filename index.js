@@ -441,7 +441,7 @@ bot.onText(/(?:why\?)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Because fuck you that's why.`);
 });
 
-bot.onText(/I swear to fuck/i, (msg, match) => {
+bot.onText(/I swear to fuck$/i, (msg, match) => {
     var remark = [`I'll fucking kiss you on the mouth.`, `I'll fucking kill you in your sleep.`];
     var randRemark = Math.floor((Math.random() * remark.length));
     bot.sendMessage(msg.chat.id, remark[randRemark]);
