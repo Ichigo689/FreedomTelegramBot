@@ -30,9 +30,6 @@ initializeEvents();
 
 
 // BOT FUNCTIONS
-
-var searches = ['American Flag', 'Statue of Liberty', 'America', 'American Freedom', 'American Constitution', 'Uncle Sam', 'Monster Truck', 'American Flag Car', `'Murica`, 'Merica', '1950s Cars', 'Bald Eagle', 'US Government', 'United States', 'M16', 'M4', 'Texas', 'American Bald Eagle', 'Burger', 'Hot Dog']
-
 var runningEvents = {};
 
 function getImage(query) {
@@ -385,9 +382,10 @@ function initializeEvents() {
 
 
 bot.onText(/^\/freedom/, (msg, match) => {
-    var randSearch = Math.floor((Math.random() * searches.length) + 1);
+    var searches = ['American Flag', 'Statue of Liberty', 'America', 'American Freedom', 'American Constitution', 'Uncle Sam', 'Monster Truck', 'American Flag Car', `'Murica`, 'Merica', '1950s Cars', 'Bald Eagle', 'US Government', 'United States', 'M16', 'M4', 'Texas', 'American Bald Eagle', 'Burger', 'Hot Dog'];
+    var randSearch = Math.floor((Math.random() * searches.length));
     getImage(searches[randSearch]).then((result) => {
-        var randImg = Math.floor((Math.random() * result.length) + 1);
+        var randImg = Math.floor((Math.random() * result.length));
         console.log(searches[randSearch], randSearch);
         bot.sendMessage(msg.chat.id, result[randImg].url);
     }).catch((error) => {
@@ -397,7 +395,7 @@ bot.onText(/^\/freedom/, (msg, match) => {
 
 bot.onText(/^\/blaze/, (msg, match) => {
     getImage('fire').then((result) => {
-        var randImg = Math.floor((Math.random() * result.length) + 1);
+        var randImg = Math.floor((Math.random() * result.length));
         console.log('Blaze:', randImg);
         bot.sendMessage(msg.chat.id, ('Blayz ' + result[randImg].url));
     });
@@ -430,7 +428,7 @@ bot.onText(/(?:(never)|(don(?:')t)|(won(?:')t|(not)|(no)))? ?pull(?:ed|ing)? out
 
 bot.onText(/^fuck$/i, (msg, match) => {
     var remark = ["anal fisting", "anal fishing", "oral fisting", "oral fishing"];
-    var randRemark = Math.floor((Math.random() * remark.length) + 1);
+    var randRemark = Math.floor((Math.random() * remark.length));
 
     bot.sendMessage(msg.chat.id, `"Fuck" is a bad word. I prefer ${remark[randRemark]}.`);
 });
@@ -444,14 +442,14 @@ bot.onText(/(?:why\?)/i, (msg, match) => {
 });
 
 bot.onText(/I swear to fuck/i, (msg, match) => {
-    var remark = [`I'll fucking kiss you on the mouth.`, `I'll fucking kill you in your sleep.`]
-    var randRemark = Math.floor((Math.random() * remark.length) + 1);
+    var remark = [`I'll fucking kiss you on the mouth.`, `I'll fucking kill you in your sleep.`];
+    var randRemark = Math.floor((Math.random() * remark.length));
     bot.sendMessage(msg.chat.id, remark[randRemark]);
 });
 
 bot.onText(/guess what?/i, (msg, match) => {
-    var remark = [`Fucked your mom last night.`, `Did your mom last night`, `Did\nYour\nMom!`]
-    var randRemark = Math.floor((Math.random() * remark.length) + 1);
+    var remark = [`Fucked your mom last night.`, `Did your mom last night`, `Did\nYour\nMom!`];
+    var randRemark = Math.floor((Math.random() * remark.length));
     bot.sendMessage(msg.chat.id, remark[randRemark]);
 });
 
