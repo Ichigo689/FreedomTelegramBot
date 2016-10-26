@@ -457,7 +457,7 @@ bot.onText(/^fuck (?:the|tha|da) (?:police)/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Comin' straight from the underground.`);
 });
 
-bot.onText(/ain'?t nothing to it/, (msg, match) => {
+bot.onText(/ain'?t nothing to it$/i, (msg, match) => {
     bot.sendMessage(msg.chat.id, `Gangsta rap made me do it.`);
 });
 
