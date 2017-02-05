@@ -613,7 +613,7 @@ bot.onText(/^\/cowsay (.+)$/, (msg, match) => {
 });
 
 bot.onText(/(remind me in a bit to)([\w\s]+)./i, (msg, match) => {
-    var time = new Date(new Date().getTime() + 1 * 60000);
+    var time = new Date(new Date().getTime() + 27 * 60000);
     console.log(time);
     var reminder = new cronJob(
         time,
